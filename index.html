@@ -573,9 +573,18 @@ function celebrar(pts,badge){
 }
 
 function queueSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,300);}
-async function save(){if(!window.storage)return;try{await window.storage.set(KEY,JSON.stringify({done,ts:Date.now()}));}catch(e){toast("No se pudo guardar");}}
+async function save(){
+  const payload=JSON.stringify({done,ts:Date.now()});
+  try{
+    if(window.storage){await window.storage.set(KEY,payload);}   // Artifact de Claude
+    else{localStorage.setItem(KEY,payload);}                     // navegador / GitHub Pages
+  }catch(e){toast("No se pudo guardar");}
+}
 async function cargar(){
-  if(window.storage){try{const r=await window.storage.get(KEY);if(r&&r.value)done=(JSON.parse(r.value)).done||{};}catch(e){done={};}}
+  try{
+    if(window.storage){const r=await window.storage.get(KEY);if(r&&r.value)done=(JSON.parse(r.value)).done||{};}
+    else{const v=localStorage.getItem(KEY);if(v)done=(JSON.parse(v)).done||{};}
+  }catch(e){done={};}
   render();
 }
 
@@ -604,7 +613,7 @@ document.getElementById("app").addEventListener("click",e=>{
 });
 document.getElementById("reset").addEventListener("click",async()=>{
   if(!confirm("¿Reiniciar todo el progreso? No se puede deshacer."))return;
-  done={};if(window.storage){try{await window.storage.delete(KEY);}catch(e){}}
+  done={};try{if(window.storage){await window.storage.delete(KEY);}else{localStorage.removeItem(KEY);}}catch(e){}
   render();toast("Progreso reiniciado");
 });
 cargar();
