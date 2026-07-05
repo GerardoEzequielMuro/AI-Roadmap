@@ -22,14 +22,11 @@ export function totals(done: Done) {
   return { pts, ptsTot, steps, stepsTot, recs, badges }
 }
 
-// "Estás acá" = primer proyecto/checkpoint sin completar; si no, el próximo pendiente.
+// "Estás acá" = el primer paso núcleo sin completar, en orden.
+// Avanza con cada paso que completás (te sigue linealmente).
 export function nodoActual(done: Done): string | null {
-  const trabajo = coreNodes().find(
-    (n) => !done[n.id] && (n.tipo === 'PROYECTO' || n.tipo === 'CHECKPOINT'),
-  )
-  if (trabajo) return trabajo.id
-  const otro = coreNodes().find((n) => !done[n.id])
-  return otro ? otro.id : null
+  const siguiente = coreNodes().find((n) => !done[n.id])
+  return siguiente ? siguiente.id : null
 }
 
 export const fmtMin = (m: number) =>
