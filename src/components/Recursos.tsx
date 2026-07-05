@@ -28,6 +28,7 @@ export function Recursos({ r, nodeId }: { r?: Recurso[]; nodeId: string }) {
                 className={`rseen${on ? ' on' : ''}`}
                 onClick={() => toggleSeen(key)}
                 aria-pressed={on}
+                aria-label={`${on ? 'Marcar como no visto' : 'Marcar como visto'}: ${titulo}`}
                 title={on ? 'Marcar como no visto' : 'Marcar como visto'}
               />
               <a className="rec" href={url} target="_blank" rel="noopener">

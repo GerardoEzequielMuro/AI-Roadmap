@@ -57,6 +57,7 @@ export default function App() {
 
   return (
     <>
+      <a className="skip" href="#contenido">Saltar al contenido</a>
       <div className="topbar">
         <div className="wrap tb">
           <span className="brand">
@@ -73,8 +74,11 @@ export default function App() {
               className="hero-txt"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
             >
+              <span className="eyebrow">
+                <span className="dot" /> Ruta de aprendizaje · 6 fases + capstone
+              </span>
               <h1>
                 Tu ruta de aprendizaje <span className="accent">en IA</span>
               </h1>
@@ -91,7 +95,9 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 90, damping: 14, delay: 0.1 }}
             >
-              <HeroArt />
+              <div className="art-core">
+                <HeroArt />
+              </div>
             </motion.div>
           </div>
 
@@ -138,7 +144,7 @@ export default function App() {
           </div>
         </header>
 
-        <main>
+        <main id="contenido">
           {FASES.map((f) => (
             <Fase key={f.id} f={f} done={done} aca={aca} isDone={faseDone(f, done)} onToggle={handleToggle} />
           ))}

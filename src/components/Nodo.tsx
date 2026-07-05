@@ -47,8 +47,18 @@ export function Nodo({
         whileTap={{ scale: 0.8 }}
         onClick={() => onToggle(n.id)}
         aria-pressed={done}
+        aria-label={done ? `Marcar "${n.tit}" como pendiente` : `Completar "${n.tit}"`}
         title={done ? 'Marcar pendiente' : 'Completar'}
-      />
+      >
+        <svg className="knob-check" viewBox="0 0 24 24" aria-hidden>
+          <motion.path
+            d="M5.5 12.5l4 4 9-9.5"
+            initial={false}
+            animate={{ pathLength: done ? 1 : 0, opacity: done ? 1 : 0 }}
+            transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+          />
+        </svg>
+      </motion.button>
       <motion.div className="ncard" whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
         <button className="nhead" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
           {isAca && (
@@ -122,6 +132,7 @@ export function Nodo({
                               className="sub-check"
                               onClick={() => toggleCheck(k)}
                               aria-pressed={on}
+                              aria-label={`${on ? 'Desmarcar' : 'Marcar hecho'}: ${s}`}
                               title={on ? 'Desmarcar' : 'Marcar hecho'}
                             />
                             <span>{s}</span>
@@ -145,6 +156,7 @@ export function Nodo({
                     className="notas-ta"
                     value={notes[n.id] || ''}
                     onChange={(e) => setNote(n.id, e.target.value)}
+                    autoComplete="off"
                     placeholder="Anotá dudas, avances, tu próxima acción concreta…"
                   />
                 </div>
