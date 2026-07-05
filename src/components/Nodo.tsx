@@ -115,6 +115,13 @@ export function Nodo({
                   </div>
                 )}
 
+                {det?.concepto && (
+                  <div className="callout c-concepto">
+                    <div className="callout-h">💡 El concepto, en criollo</div>
+                    <p className="callout-b">{det.concepto}</p>
+                  </div>
+                )}
+
                 {det && det.sub.length > 0 && (
                   <div className="subs">
                     <div className="subs-h">
@@ -137,6 +144,28 @@ export function Nodo({
                           </li>
                         )
                       })}
+                    </ul>
+                  </div>
+                )}
+
+                {det?.errores && det.errores.length > 0 && (
+                  <div className="callout c-errores">
+                    <div className="callout-h">⚠️ Errores comunes</div>
+                    <ul className="callout-list">
+                      {det.errores.map((e, i) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {det?.chequeo && det.chequeo.length > 0 && (
+                  <div className="callout c-chequeo">
+                    <div className="callout-h">🧠 ¿Lo entendiste? Deberías poder responder</div>
+                    <ul className="callout-list">
+                      {det.chequeo.map((q, i) => (
+                        <li key={i}>{q}</li>
+                      ))}
                     </ul>
                   </div>
                 )}

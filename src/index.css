@@ -276,6 +276,19 @@ pre{font-family:var(--mono);font-size:11.5px;line-height:1.5;background:var(--s2
 .sub.on .sub-check::after{content:"✓"}
 .sub.on span{text-decoration:line-through;color:var(--mut)}
 
+/* callouts didácticos: concepto / errores / chequeo */
+.callout{margin-top:12px;border:1px solid var(--line);border-left:3px solid var(--line-d);border-radius:10px;padding:11px 13px}
+.callout-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.callout-b{font-size:13.5px;color:var(--ink);line-height:1.5}
+.callout-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.callout-list li{font-size:13.5px;color:var(--ink);line-height:1.45}
+.c-concepto{background:color-mix(in srgb,var(--blue) 7%,var(--card));border-left-color:var(--blue)}
+.c-concepto .callout-h{color:var(--blue-d)}
+.c-errores{background:color-mix(in srgb,var(--gold) 12%,var(--card));border-left-color:#e0912f}
+.c-errores .callout-h{color:var(--gold-ink)}
+.c-chequeo{background:color-mix(in srgb,var(--purple) 8%,var(--card));border-left-color:var(--purple)}
+.c-chequeo .callout-h{color:var(--purple)}
+
 /* notas personales */
 .notas-user{margin-top:14px}
 .notas-h{display:block;font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
