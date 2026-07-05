@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FASES } from './data/roadmap'
 import { faseDone, flat, nodoActual, totals, type Done } from './lib/utils'
-import { useProgress } from './hooks/useProgress'
+import { useStore } from './store'
 import { AnimatedNumber } from './components/AnimatedNumber'
 import { HeroArt } from './components/HeroArt'
 import { Fase } from './components/Fase'
 import { Confetti } from './components/Confetti'
 
 export default function App() {
-  const { done, setDone, reset } = useProgress()
+  const { done, setDone, reset } = useStore()
   const [burst, setBurst] = useState<{ id: number; big: boolean } | null>(null)
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null)
   const burstId = useRef(0)

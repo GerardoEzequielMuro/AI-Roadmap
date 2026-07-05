@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Nodo as NodoT } from '../data/roadmap'
 import { CLAUDE_MD, NICON } from '../data/roadmap'
+import { DETALLE } from '../data/detalle'
 import { fmtMin } from '../lib/utils'
+import { useStore } from '../store'
 import { Recursos } from './Recursos'
 
 export function Nodo({
@@ -19,14 +21,18 @@ export function Nodo({
   defaultOpen?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
+  const { checks, toggleCheck, notes, setNote } = useStore()
   const isCP = n.tipo === 'CHECKPOINT'
   const icon = NICON[n.tipo] || { e: '•', bg: '#f0f3f7', bd: '#e2e7ee' }
+  const det = DETALLE[n.id]
 
   const cls = ['nodo']
   if (isCP) cls.push('cp')
   if (n.opt) cls.push('opt')
   if (done) cls.push('hecho')
   if (isAca) cls.push('activo')
+
+  const subDone = det ? det.sub.filter((_, i) => checks[`${n.id}:${i}`]).length : 0
 
   return (
     <motion.li
@@ -61,6 +67,11 @@ export function Nodo({
           </span>
           <span className="ntit">{n.tit}</span>
           <span className="nmeta">
+            {det && det.sub.length > 0 && (
+              <span className="pill sub-pill">
+                {subDone}/{det.sub.length}
+              </span>
+            )}
             {n.pts > 0 && <span className="pill pts">{n.pts} pts</span>}
             <span className="pill">{fmtMin(n.min)}</span>
             <span className="pill type">{n.tipo}</span>
@@ -78,8 +89,66 @@ export function Nodo({
             >
               <div className="detalle">
                 <p className="desc">{n.d}</p>
+
+                {det && (
+                  <div className="meta3">
+                    <div className="m3 m3-obj">
+                      <span className="m3k">🎯 Objetivo</span>
+                      <span className="m3v">{det.obj}</span>
+                    </div>
+                    <div className="m3 m3-ent">
+                      <span className="m3k">📦 Entregable</span>
+                      <span className="m3v">{det.entregable}</span>
+                    </div>
+                    <div className="m3 m3-listo">
+                      <span className="m3k">✅ Listo cuando</span>
+                      <span className="m3v">{det.listo}</span>
+                    </div>
+                  </div>
+                )}
+
+                {det && det.sub.length > 0 && (
+                  <div className="subs">
+                    <div className="subs-h">
+                      Sub-pasos <span className="subs-count">{subDone}/{det.sub.length}</span>
+                    </div>
+                    <ul className="sub-list">
+                      {det.sub.map((s, i) => {
+                        const k = `${n.id}:${i}`
+                        const on = !!checks[k]
+                        return (
+                          <li key={i} className={`sub${on ? ' on' : ''}`}>
+                            <button
+                              className="sub-check"
+                              onClick={() => toggleCheck(k)}
+                              aria-pressed={on}
+                              title={on ? 'Desmarcar' : 'Marcar hecho'}
+                            />
+                            <span>{s}</span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )}
+
                 {n.pre && <pre>{CLAUDE_MD}</pre>}
-                <Recursos r={n.r} />
+
+                <Recursos r={n.r} nodeId={n.id} />
+
+                <div className="notas-user">
+                  <label className="notas-h" htmlFor={`nota-${n.id}`}>
+                    📝 Mis notas
+                  </label>
+                  <textarea
+                    id={`nota-${n.id}`}
+                    className="notas-ta"
+                    value={notes[n.id] || ''}
+                    onChange={(e) => setNote(n.id, e.target.value)}
+                    placeholder="Anotá dudas, avances, tu próxima acción concreta…"
+                  />
+                </div>
+
                 {n.nota && <p className="nota">{n.nota}</p>}
               </div>
             </motion.div>
