@@ -143,6 +143,25 @@
   .rtit::after{content:" ↗";color:var(--mut);font-size:11px}
   .rmeta{color:var(--mut);font-size:12.5px}
 
+  /* embeds de YouTube (carga diferida) */
+  .ytwrap{padding:4px 8px 10px 44px}
+  .yt-lite{position:relative;display:block;width:100%;max-width:440px;aspect-ratio:16/9;border:1px solid var(--line);
+    border-radius:10px;background:#000 center/cover no-repeat;cursor:pointer;overflow:hidden;padding:0}
+  .yt-lite::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.14);transition:background .15s}
+  .yt-lite:hover::after{background:rgba(0,0,0,0)}
+  .yt-play{position:absolute;z-index:1;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:39px;
+    border-radius:10px;background:#f00;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.35);transition:transform .15s}
+  .yt-lite:hover .yt-play{transform:translate(-50%,-50%) scale(1.08)}
+  .yt-play::before{content:"";border-left:17px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:3px}
+  .yt-pl{aspect-ratio:auto;height:50px;background:#f7f9fb;display:flex;align-items:center;gap:12px;padding:0 14px}
+  .yt-pl::after{display:none}
+  .yt-pl .yt-play{position:static;transform:none;width:38px;height:27px;box-shadow:none}
+  .yt-pl:hover .yt-play{transform:scale(1.08)}
+  .yt-pl .yt-play::before{border-left-width:12px;border-top-width:7px;border-bottom-width:7px}
+  .yt-pltext{color:var(--ink);font-weight:700;font-size:13px}
+  .yt-frame{width:100%;max-width:440px;aspect-ratio:16/9;border:0;border-radius:10px;display:block;margin:0}
+  @media(max-width:600px){.ytwrap{padding-left:8px}}
+
   /* footer */
   footer{margin-top:40px;padding:22px 0 0;border-top:1px solid var(--line);color:var(--mut);font-size:13px}
   footer p{margin-bottom:7px;max-width:76ch}
@@ -567,15 +586,37 @@ function nodoActual(){
   return otro?otro.id:null;
 }
 
+// detecta si un recurso es de YouTube → {type:'video'|'playlist', id}
+function ytId(url){
+  try{
+    const u=new URL(url);
+    if(u.hostname.includes("youtu.be"))return{type:"video",id:u.pathname.slice(1)};
+    if(u.hostname.includes("youtube.com")){
+      if(u.pathname==="/watch"&&u.searchParams.get("v"))return{type:"video",id:u.searchParams.get("v")};
+      const list=u.searchParams.get("list");
+      if(u.pathname.startsWith("/playlist")&&list)return{type:"playlist",id:list};
+    }
+  }catch(e){}
+  return null;
+}
+
 function recsHTML(r){
   if(!r||!r.length)return"";
   return `<div class="recs"><div class="recs-h">Material · elegí lo que te sirva</div>`+
     r.map(x=>{
       const t=x[0], label=TIPO_LABEL[t]||t;
-      return `<a class="rec" href="${x[3]}" target="_blank" rel="noopener">`+
+      const link=`<a class="rec" href="${x[3]}" target="_blank" rel="noopener">`+
         `<span class="rtype t-${t}">${label}</span>`+
         `<span class="rbody"><span class="rtit">${esc(x[1])}</span>`+
         (x[2]?`<span class="rmeta"> — ${esc(x[2])}</span>`:``)+`</span></a>`;
+      const yt=ytId(x[3]);
+      let embed="";
+      if(yt&&yt.type==="video"){
+        embed=`<div class="ytwrap"><button class="yt-lite" data-yt="video:${yt.id}" aria-label="Reproducir video acá" style="background-image:url('https://i.ytimg.com/vi/${yt.id}/hqdefault.jpg')"><span class="yt-play"></span></button></div>`;
+      }else if(yt&&yt.type==="playlist"){
+        embed=`<div class="ytwrap"><button class="yt-lite yt-pl" data-yt="playlist:${yt.id}" aria-label="Reproducir playlist acá"><span class="yt-play"></span><span class="yt-pltext">Reproducir playlist acá</span></button></div>`;
+      }
+      return `<div class="rec-item">${link}${embed}</div>`;
     }).join("")+`</div>`;
 }
 
@@ -678,6 +719,20 @@ async function cargar(){
 }
 
 document.getElementById("app").addEventListener("click",e=>{
+  const yt=e.target.closest("[data-yt]");
+  if(yt){
+    const v=yt.getAttribute("data-yt"),sep=v.indexOf(":");
+    const type=v.slice(0,sep),id=v.slice(sep+1);
+    const src=type==="playlist"
+      ?`https://www.youtube-nocookie.com/embed/videoseries?list=${id}&autoplay=1`
+      :`https://www.youtube-nocookie.com/embed/${id}?autoplay=1`;
+    const ifr=document.createElement("iframe");
+    ifr.className="yt-frame";ifr.src=src;ifr.loading="lazy";
+    ifr.allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture";
+    ifr.setAttribute("allowfullscreen","");
+    yt.replaceWith(ifr);
+    return;
+  }
   const chk=e.target.closest("[data-check]");
   if(chk){
     const id=chk.getAttribute("data-check");
