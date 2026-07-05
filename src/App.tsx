@@ -1,22 +1,50 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import { FASES } from './data/roadmap'
 import { faseDone, flat, nodoActual, totals, type Done } from './lib/utils'
 import { useStore } from './store'
 import { AnimatedNumber } from './components/AnimatedNumber'
 import { HeroArt } from './components/HeroArt'
+import { RoadMapNav } from './components/RoadMapNav'
 import { Fase } from './components/Fase'
 import { Confetti } from './components/Confetti'
 
+type Theme = 'light' | 'dark'
+const THEME_KEY = 'roadmap-ia-theme'
+
+function useTheme(): [Theme, () => void] {
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const v = localStorage.getItem(THEME_KEY)
+      if (v === 'light' || v === 'dark') return v
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    } catch {
+      return 'light'
+    }
+  })
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    try {
+      localStorage.setItem(THEME_KEY, theme)
+    } catch { /* noop */ }
+  }, [theme])
+  return [theme, () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))]
+}
+
 export default function App() {
   const { done, setDone, reset } = useStore()
+  const [theme, toggleTheme] = useTheme()
   const [burst, setBurst] = useState<{ id: number; big: boolean } | null>(null)
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null)
   const burstId = useRef(0)
 
+  const { scrollY } = useScroll()
+  const artY = useTransform(scrollY, [0, 500], [0, -40])
+
   const t = totals(done)
   const aca = nodoActual(done)
   const pct = t.ptsTot ? Math.round((t.pts / t.ptsTot) * 100) : 0
+  const allDone = t.badges === FASES.length
 
   useEffect(() => {
     if (!toast) return
@@ -63,7 +91,17 @@ export default function App() {
           <span className="brand">
             <span className="brand-mark">⛰️</span> Roadmap IA
           </span>
-          <span className="tb-tag">De los gradientes a los transformers</span>
+          <div className="tb-right">
+            <span className="tb-tag">De los gradientes a los transformers</span>
+            <button
+              className="theme-btn"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -91,6 +129,7 @@ export default function App() {
             <motion.div
               className="hero-art"
               aria-hidden
+              style={{ y: artY }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: 'spring', stiffness: 90, damping: 14, delay: 0.1 }}
@@ -143,6 +182,26 @@ export default function App() {
             </div>
           </div>
         </header>
+
+        <RoadMapNav done={done} aca={aca} />
+
+        <AnimatePresence>
+          {allDone && (
+            <motion.div
+              className="done-all"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 140, damping: 18 }}
+            >
+              <span className="done-all-emoji">🎉</span>
+              <div>
+                <b>¡Completaste el roadmap!</b>
+                <span>Las 6 insignias, de los gradientes a los transformers. En serio.</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <main id="contenido">
           {FASES.map((f) => (

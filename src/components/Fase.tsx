@@ -25,7 +25,9 @@ export function Fase({
 
   return (
     <motion.section
+      id={f.id}
       className={`fase${isDone ? ' done' : ''}`}
+      style={{ ['--fc' as string]: f.color }}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
