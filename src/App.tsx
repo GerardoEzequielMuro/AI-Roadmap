@@ -66,6 +66,17 @@ export default function App() {
     return () => clearTimeout(id)
   }, [toast])
 
+  // El FAB "Tu paso" aparece solo cuando tu paso actual NO está en pantalla.
+  const [acaInView, setAcaInView] = useState(false)
+  useEffect(() => {
+    if (!aca) { setAcaInView(false); return }
+    const el = document.getElementById(aca)
+    if (!el) { setAcaInView(false); return }
+    const obs = new IntersectionObserver(([e]) => setAcaInView(e.isIntersecting), { threshold: 0.35 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [aca, collapsed, filter, focus])
+
   function celebrate(pts: number, big: boolean) {
     burstId.current += 1
     setBurst({ id: burstId.current, big })
@@ -335,11 +346,21 @@ export default function App() {
         </footer>
       </div>
 
-      {aca && (
-        <button className="fab" onClick={goToCurrent} aria-label="Ir a tu paso actual">
-          <span className="fab-ic">▶</span> Tu paso
-        </button>
-      )}
+      <AnimatePresence>
+        {aca && !acaInView && (
+          <motion.button
+            className="fab"
+            onClick={goToCurrent}
+            aria-label="Ir a tu paso actual"
+            initial={{ opacity: 0, y: 16, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+          >
+            <span className="fab-ic">▶</span> Tu paso
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <Confetti burst={burst} />
 

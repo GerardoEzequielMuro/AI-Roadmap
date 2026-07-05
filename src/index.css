@@ -38,7 +38,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{background:var(--bg);color-scheme:light;scroll-behavior:smooth}
 body{background:transparent;color:var(--text);font-family:var(--sans);overflow-x:hidden;
-     font-size:15px;line-height:1.55;padding-bottom:60px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+     font-size:15px;line-height:1.55;padding-bottom:88px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   background:
     radial-gradient(60% 45% at 88% 6%, rgba(13,157,218,.10), transparent 70%),
