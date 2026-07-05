@@ -11,15 +11,31 @@ export const faseDone = (f: Fase, done: Done) => {
 }
 
 export function totals(done: Done) {
-  let pts = 0, ptsTot = 0, steps = 0, stepsTot = 0, recs = 0
+  let pts = 0, ptsTot = 0, steps = 0, stepsTot = 0, recs = 0, min = 0, minTot = 0
   coreNodes().forEach((n) => {
     ptsTot += n.pts
     stepsTot++
-    if (done[n.id]) { pts += n.pts; steps++ }
+    minTot += n.min
+    if (done[n.id]) { pts += n.pts; steps++; min += n.min }
   })
   flat().forEach((n) => { if (n.r) recs += n.r.length })
   const badges = FASES.filter((f) => faseDone(f, done)).length
-  return { pts, ptsTot, steps, stepsTot, recs, badges }
+  return { pts, ptsTot, steps, stepsTot, recs, badges, min, minTot }
+}
+
+export type FilterKey = 'all' | 'pend' | 'PROYECTO' | 'TEORÍA' | 'CHECKPOINT'
+
+export function matchesFilter(n: { id: string; tipo: string }, filter: FilterKey, done: Done): boolean {
+  if (filter === 'all') return true
+  if (filter === 'pend') return !done[n.id]
+  return n.tipo === filter
+}
+
+export const fmtH = (m: number) => {
+  const h = m / 60
+  if (h >= 10) return `${Math.round(h)}h`
+  if (h >= 1) return `${(Math.round(h * 10) / 10).toString().replace('.', ',')}h`
+  return `${m}m`
 }
 
 // "Estás acá" = el primer paso núcleo sin completar, en orden.

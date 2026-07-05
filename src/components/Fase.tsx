@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Fase as FaseT } from '../data/roadmap'
-import { faseCore, type Done } from '../lib/utils'
+import { faseCore, matchesFilter, type Done, type FilterKey } from '../lib/utils'
+import { useStore } from '../store'
 import { Nodo } from './Nodo'
 
 export function Fase({
@@ -10,18 +10,28 @@ export function Fase({
   aca,
   isDone,
   onToggle,
+  filter,
+  focus,
 }: {
   f: FaseT
   done: Done
   aca: string | null
   isDone: boolean
   onToggle: (id: string) => void
+  filter: FilterKey
+  focus: boolean
 }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const { collapsed, toggleCollapsed } = useStore()
+  const isCollapsed = !!collapsed[f.id]
   const core = faseCore(f)
   const fh = core.filter((n) => done[n.id]).length
   const fpts = core.reduce((a, n) => a + (done[n.id] ? n.pts : 0), 0)
   const fptsTot = core.reduce((a, n) => a + n.pts, 0)
+
+  const visibles = f.nodos.filter((n) =>
+    focus ? n.id === aca : matchesFilter(n, filter, done),
+  )
+  if (visibles.length === 0) return null
 
   return (
     <motion.section
@@ -33,7 +43,7 @@ export function Fase({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ type: 'spring', stiffness: 110, damping: 20 }}
     >
-      <button className="fase-head" onClick={() => setCollapsed((c) => !c)} aria-expanded={!collapsed}>
+      <button className="fase-head" onClick={() => toggleCollapsed(f.id)} aria-expanded={!isCollapsed}>
         <motion.span
           className="badge"
           style={{ background: f.color }}
@@ -56,12 +66,12 @@ export function Fase({
           <br />
           {fpts}/{fptsTot} pts
         </span>
-        <motion.span className="chev" animate={{ rotate: collapsed ? -90 : 0 }} transition={{ duration: 0.2 }}>
+        <motion.span className="chev" animate={{ rotate: isCollapsed ? -90 : 0 }} transition={{ duration: 0.2 }}>
           ▼
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
-        {!collapsed && (
+        {!isCollapsed && (
           <motion.div
             key="body"
             initial={{ height: 0, opacity: 0 }}
@@ -73,14 +83,13 @@ export function Fase({
             <div className="fase-body">
               <p className="fase-why">{f.why}</p>
               <ul className="nodos">
-                {f.nodos.map((n) => (
+                {visibles.map((n) => (
                   <Nodo
                     key={n.id}
                     n={n}
                     done={!!done[n.id]}
                     isAca={n.id === aca}
                     onToggle={onToggle}
-                    defaultOpen={n.id === 'f0-4'}
                   />
                 ))}
               </ul>

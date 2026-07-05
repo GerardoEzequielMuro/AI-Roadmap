@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import { FASES } from './data/roadmap'
-import { faseDone, flat, nodoActual, totals, type Done } from './lib/utils'
+import { faseDone, flat, fmtH, matchesFilter, nodoActual, totals, type Done, type FilterKey } from './lib/utils'
 import { useStore } from './store'
 import { AnimatedNumber } from './components/AnimatedNumber'
 import { HeroArt } from './components/HeroArt'
@@ -11,6 +11,14 @@ import { Confetti } from './components/Confetti'
 
 type Theme = 'light' | 'dark'
 const THEME_KEY = 'roadmap-ia-theme'
+
+const FILTERS: { k: FilterKey; label: string }[] = [
+  { k: 'all', label: 'Todos' },
+  { k: 'pend', label: 'Pendientes' },
+  { k: 'PROYECTO', label: 'Proyectos' },
+  { k: 'TEORÍA', label: 'Teoría' },
+  { k: 'CHECKPOINT', label: 'Checkpoints' },
+]
 
 function useTheme(): [Theme, () => void] {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -32,11 +40,14 @@ function useTheme(): [Theme, () => void] {
 }
 
 export default function App() {
-  const { done, setDone, reset } = useStore()
+  const { done, setDone, reset, collapsed, setCollapsed, setOpen, replaceAll, snapshot } = useStore()
   const [theme, toggleTheme] = useTheme()
+  const [filter, setFilter] = useState<FilterKey>('all')
+  const [focus, setFocus] = useState(false)
   const [burst, setBurst] = useState<{ id: number; big: boolean } | null>(null)
   const [toast, setToast] = useState<{ msg: string; key: number } | null>(null)
   const burstId = useRef(0)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const { scrollY } = useScroll()
   const artY = useTransform(scrollY, [0, 500], [0, -40])
@@ -45,6 +56,9 @@ export default function App() {
   const aca = nodoActual(done)
   const pct = t.ptsTot ? Math.round((t.pts / t.ptsTot) * 100) : 0
   const allDone = t.badges === FASES.length
+  const anyVisible = FASES.some((f) =>
+    f.nodos.some((n) => (focus ? n.id === aca : matchesFilter(n, filter, done))),
+  )
 
   useEffect(() => {
     if (!toast) return
@@ -81,6 +95,48 @@ export default function App() {
     if (!confirm('¿Reiniciar todo el progreso? No se puede deshacer.')) return
     reset()
     setToast({ msg: 'Progreso reiniciado', key: Date.now() })
+  }
+
+  function goToCurrent() {
+    if (!aca) return
+    setFocus(false)
+    setFilter('all')
+    const fase = FASES.find((f) => f.nodos.some((n) => n.id === aca))
+    if (fase && collapsed[fase.id]) setCollapsed(fase.id, false)
+    setOpen(aca, true)
+    requestAnimationFrame(() =>
+      setTimeout(
+        () => document.getElementById(aca)?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+        80,
+      ),
+    )
+  }
+
+  function exportData() {
+    const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'roadmap-ia-progreso.json'
+    a.click()
+    URL.revokeObjectURL(url)
+    setToast({ msg: 'Progreso exportado ✓', key: Date.now() })
+  }
+
+  function importData(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        replaceAll(JSON.parse(String(reader.result)))
+        setToast({ msg: 'Progreso importado ✓', key: Date.now() })
+      } catch {
+        setToast({ msg: 'Archivo inválido', key: Date.now() })
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
   }
 
   return (
@@ -175,6 +231,13 @@ export default function App() {
                 transition={{ type: 'spring', stiffness: 60, damping: 18 }}
               />
             </div>
+            <div className="time-line">
+              <span className="tl-pct">{pct}% completado</span>
+              <span className="tl-time">
+                ⏱ {fmtH(t.min)} de {fmtH(t.minTot)}
+                {t.minTot - t.min > 0 && <b> · faltan {fmtH(t.minTot - t.min)}</b>}
+              </span>
+            </div>
             <div className="leyenda">
               Cada paso da <b>puntos</b> al completarlo (como Trailhead). Completá todos los pasos
               núcleo de una fase y ganás su <b>insignia</b>. Las electivas 🧶🚀 no cuentan para el
@@ -184,6 +247,30 @@ export default function App() {
         </header>
 
         <RoadMapNav done={done} aca={aca} />
+
+        <div className="controls">
+          <div className="filters" role="tablist" aria-label="Filtrar pasos">
+            {FILTERS.map((ff) => (
+              <button
+                key={ff.k}
+                role="tab"
+                aria-selected={filter === ff.k}
+                className={`chip${filter === ff.k && !focus ? ' on' : ''}`}
+                onClick={() => setFilter(ff.k)}
+                disabled={focus}
+              >
+                {ff.label}
+              </button>
+            ))}
+          </div>
+          <button
+            className={`chip focus-chip${focus ? ' on' : ''}`}
+            onClick={() => setFocus((v) => !v)}
+            aria-pressed={focus}
+          >
+            {focus ? '◱ Salir de enfoque' : '◱ Modo enfoque'}
+          </button>
+        </div>
 
         <AnimatePresence>
           {allDone && (
@@ -205,8 +292,26 @@ export default function App() {
 
         <main id="contenido">
           {FASES.map((f) => (
-            <Fase key={f.id} f={f} done={done} aca={aca} isDone={faseDone(f, done)} onToggle={handleToggle} />
+            <Fase
+              key={f.id}
+              f={f}
+              done={done}
+              aca={aca}
+              isDone={faseDone(f, done)}
+              onToggle={handleToggle}
+              filter={filter}
+              focus={focus}
+            />
           ))}
+          {!anyVisible && (
+            <div className="empty-state">
+              {focus
+                ? '¡No hay paso actual! Completaste todo. 🎉'
+                : filter === 'pend'
+                  ? '¡No quedan pendientes con este filtro! 🎉'
+                  : 'No hay pasos con este filtro.'}
+            </div>
+          )}
         </main>
 
         <footer>
@@ -219,11 +324,22 @@ export default function App() {
             Recordá el trato: este sitio lindo es la herramienta, no el estudio. La barra sube con
             P0, no con rediseños. El widget de escritorio se desbloquea en M1.
           </p>
-          <button id="reset" onClick={handleReset}>
-            reiniciar progreso
-          </button>
+          <div className="footer-actions">
+            <button id="reset" onClick={handleReset}>
+              reiniciar progreso
+            </button>
+            <button className="mini-btn" onClick={exportData}>⬇ Exportar progreso</button>
+            <button className="mini-btn" onClick={() => fileRef.current?.click()}>⬆ Importar</button>
+            <input ref={fileRef} type="file" accept="application/json" hidden onChange={importData} />
+          </div>
         </footer>
       </div>
+
+      {aca && (
+        <button className="fab" onClick={goToCurrent} aria-label="Ir a tu paso actual">
+          <span className="fab-ic">▶</span> Tu paso
+        </button>
+      )}
 
       <Confetti burst={burst} />
 

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Nodo as NodoT } from '../data/roadmap'
 import { CLAUDE_MD, NICON } from '../data/roadmap'
@@ -12,16 +11,14 @@ export function Nodo({
   done,
   isAca,
   onToggle,
-  defaultOpen = false,
 }: {
   n: NodoT
   done: boolean
   isAca: boolean
   onToggle: (id: string) => void
-  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(defaultOpen)
-  const { checks, toggleCheck, notes, setNote } = useStore()
+  const { checks, toggleCheck, notes, setNote, open: openMap, toggleOpen } = useStore()
+  const open = !!openMap[n.id]
   const isCP = n.tipo === 'CHECKPOINT'
   const icon = NICON[n.tipo] || { e: '•', bg: '#f0f3f7', bd: '#e2e7ee' }
   const det = DETALLE[n.id]
@@ -36,6 +33,7 @@ export function Nodo({
 
   return (
     <motion.li
+      id={n.id}
       className={cls.join(' ')}
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -60,7 +58,7 @@ export function Nodo({
         </svg>
       </motion.button>
       <motion.div className="ncard" whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
-        <button className="nhead" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <button className="nhead" onClick={() => toggleOpen(n.id)} aria-expanded={open}>
           {isAca && (
             <span className="aca-row">
               <motion.span

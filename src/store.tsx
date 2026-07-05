@@ -4,21 +4,29 @@ const KEY = 'roadmap-ia-v1'
 
 type Bool = Record<string, boolean>
 
-interface Persisted {
+export interface Persisted {
   done: Bool
   checks: Bool // sub-tareas, key `${nodeId}:${i}`
   seen: Bool // recursos vistos, key `${nodeId}:r${i}`
   notes: Record<string, string> // notas por nodo, key nodeId
+  collapsed: Bool // fases colapsadas, key faseId
+  open: Bool // nodos abiertos, key nodeId
 }
 
-const EMPTY: Persisted = { done: {}, checks: {}, seen: {}, notes: {} }
+const EMPTY: Persisted = { done: {}, checks: {}, seen: {}, notes: {}, collapsed: {}, open: {} }
 
 interface Api extends Persisted {
   setDone: (d: Bool) => void
   toggleCheck: (k: string) => void
   toggleSeen: (k: string) => void
   setNote: (id: string, v: string) => void
+  toggleCollapsed: (id: string) => void
+  toggleOpen: (id: string) => void
+  setOpen: (id: string, v: boolean) => void
+  setCollapsed: (id: string, v: boolean) => void
+  replaceAll: (p: Partial<Persisted>) => void
   reset: () => void
+  snapshot: () => Persisted
 }
 
 const Ctx = createContext<Api | null>(null)
@@ -50,7 +58,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toggleCheck: (k) => setS((p) => ({ ...p, checks: { ...p.checks, [k]: !p.checks[k] } })),
     toggleSeen: (k) => setS((p) => ({ ...p, seen: { ...p.seen, [k]: !p.seen[k] } })),
     setNote: (id, v) => setS((p) => ({ ...p, notes: { ...p.notes, [id]: v } })),
+    toggleCollapsed: (id) => setS((p) => ({ ...p, collapsed: { ...p.collapsed, [id]: !p.collapsed[id] } })),
+    toggleOpen: (id) => setS((p) => ({ ...p, open: { ...p.open, [id]: !p.open[id] } })),
+    setOpen: (id, v) => setS((p) => ({ ...p, open: { ...p.open, [id]: v } })),
+    setCollapsed: (id, v) => setS((p) => ({ ...p, collapsed: { ...p.collapsed, [id]: v } })),
+    replaceAll: (partial) => setS({ ...EMPTY, ...partial }),
     reset: () => setS(EMPTY),
+    snapshot: () => s,
   }
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>
